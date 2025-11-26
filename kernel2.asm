@@ -1,6 +1,15 @@
 [BITS 16]
 [ORG 0x1000]
 
+; En 0xB800 se encuentra la memoria de video para modo texto
+; Cada carácter ocupa 2 bytes: 1 byte para el código ASCII y 1 byte para el atributo (color)
+; Por ejemplo, para escribir en la primera posición de la pantalla:
+; Dirección = 0xB800:0000
+
+; La int 16 se usa para leer entradas del teclado, recibeiendo el carácter en AL y en Ah el scan-code de la tecla pulsada
+; vale ver https://es.wikipedia.org/wiki/Int_16h
+; La int 10 se usa para operaciones de video, como mover el cursor, colocando la posición en DH (fila) y DL (columna)
+; vale ver https://es.wikipedia.org/wiki/Int_10h
 start:
     mov ax, 0x1000  ; Segmento base
     mov ds, ax      ; Configura segmento de datos
@@ -162,9 +171,8 @@ start:
 
         jmp shell_loop          ; Repetir bucle
 
-
+; Con print_string se recorre el vector con la leyenda a escribe en pantalla hasta encontrar el byte nulo o 0x00
     print_string:
-    ;    lodsb           ; Cargar un caracter en AL
         mov al, [cs:si]     ; Cargar el caracter apuntado por SI en AL
         inc si
         or al, al        ; ¿Fin de cadena?
@@ -184,8 +192,6 @@ start:
 
     escribir_bienvenida:
         ; Escribir mensaje carácter por carácter
-    ;    mov AX, CS      ; Asegurar que DS apunta al segmento de código
-    ;    mov DS, AX
         mov si, bienvenida_msg
         mov ah, 0x07        ; Atributo Blanco sobre Negro
         call print_string
