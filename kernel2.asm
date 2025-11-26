@@ -6,10 +6,11 @@
 ; Por ejemplo, para escribir en la primera posición de la pantalla:
 ; Dirección = 0xB800:0000
 
-; La int 16 se usa para leer entradas del teclado, recibeiendo el carácter en AL y en Ah el scan-code de la tecla pulsada
+; La int 16 se usa para leer entradas del teclado, recibiendo el carácter en AL y en Ah el scan-code de la tecla pulsada
 ; vale ver https://es.wikipedia.org/wiki/Int_16h
 ; La int 10 se usa para operaciones de video, como mover el cursor, colocando la posición en DH (fila) y DL (columna)
 ; vale ver https://es.wikipedia.org/wiki/Int_10h
+
 start:
     mov ax, 0x1000  ; Segmento base
     mov ds, ax      ; Configura segmento de datos
@@ -171,7 +172,7 @@ start:
 
         jmp shell_loop          ; Repetir bucle
 
-; Con print_string se recorre el vector con la leyenda a escribe en pantalla hasta encontrar el byte nulo o 0x00
+; Con print_string se recorre el vector con la leyenda a escribir en pantalla hasta encontrar el byte nulo o 0x00
     print_string:
         mov al, [cs:si]     ; Cargar el caracter apuntado por SI en AL
         inc si
