@@ -126,16 +126,42 @@ start:
             mov dh, [cursor_row]     ; Restaurar fila
             mov dl, [cursor_col]     ; Restaurar columna
         add dl, 1                ; Mover a la siguiente columna
+        cmp dl, 80               ; ¿Llegamos al final de la fila?
+        jl .no_wrap
+            ; Si es así, mover a la siguiente fila
+            mov dl, 0            ; Reiniciar columna
+            cmp dh, 24             ; ¿Estamos en la última fila (24)?
+            jl .sin_prompt
+                ; Si estamos en la última fila, desplazar todo hacia arriba
+                push si
+                push di
+                push ds
+                mov ax, 0xB800  ; Segmento de memoria de video
+                mov ds, ax      ; Pongo DS=ES para mover con movsw
+                mov si, 160     ; Inicio del mensaje del prompt
+                mov di, 0 ; Inicio de la segunda fila
+                mov cx, 24 * 80 * 2 ; Número de bytes a mover (filas restantes)
+                rep movsw              ; Mover filas hacia arriba  
+                ; Limpiar la última fila
+                mov cx, 80             ; Número de columnas
+                mov al, ' '            ; Carácter espacio
+                mov ah, 0x07           ; Atributo blanco sobre negro 
+                stosw
+                pop ds
+                pop di
+                pop si
+                jmp .no_wrap
+        .sin_prompt:
+            inc dh                ; Incrementar fila
+
+        .no_wrap:
             mov [cursor_row], dh ; Guardar la fila en memoria
             mov [cursor_col], dl ; Guardar la columna en memoria
 
-           call set_cursor       ; Actualizar el cursor en el hardware
-        
-        ; Actualizar la posición máxima alcanzada
-        cmp dl, [cursor_max]    ; ¿Es mayor que la posición actual?
-        jbe no_update_max       ; Si no, no actualizar
-        mov [cursor_max], dl    ; Actualizar posición máxima
-
+        call set_cursor       ; Actualizar el cursor en el hardware
+        call calcular_nueva_pos
+   
+     
         jmp shell_loop          ; Repetir bucle
 
     process_enter:
@@ -258,11 +284,6 @@ start:
         ; No hacer nada, simplemente volver al bucle
         jmp shell_loop
 
-    no_update_max:
-        call set_cursor         ; Actualizar el cursor en el hardware
-
-        jmp shell_loop          ; Repetir bucle
-
     borrar_caracter:
         cmp byte [cursor_col], cursor_pos - prompt_msg - 1 ; ¿Esta al principio del prompt?
         jbe shell_loop          ; Si esta al principio, no moverse
@@ -326,4 +347,4 @@ cursor_col db 0        ; Variable para guardar la columna del cursor
 cursor_max db 9        ; Posición máxima alcanzada en la fila
 
 ; Rellenar hasta 512 bytes
-times 512-($-$$) db 0
+;times 512-($-$$) db 0
